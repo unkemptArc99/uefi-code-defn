@@ -3,6 +3,11 @@
 	"displayName": "uefi-code-defn",
 	"description": "The extension will be used to point of definition of keywords like PCDs, GUIDs, etc.",
 	"version": "0.0.1",
+	"publisher": "AbhishekSharma",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/unkemptArc99/uefi-code-defn"
+	},
 	"engines": {
 		"vscode": "^1.47.0"
 	},
