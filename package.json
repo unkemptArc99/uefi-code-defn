@@ -23,7 +23,32 @@
 			{
 				"command": "uefi-code-defn.helloWorld",
 				"title": "Hello World"
+			},
+			{
+				"command": "uefi-code-defn.showEnv",
+				"title": "Show Environment"
 			}
+		],
+		"grammars": [
+			{
+				"language": "dec",
+				"scopeName": "source.dec",
+				"path": "./syntaxes/dec.tmLanguage.json"
+			}
+		],
+		"languages": [
+			{
+                "id": "dec",
+                "aliases": [
+                    "UEFI Project Declaration File",
+                    "DEC",
+                    "dec"
+                ],
+                "extensions": [
+                    ".dec"
+                ],
+                "configuration": "./language-coonfigurations/dec-language-configuration.json"
+            }
 		]
 	},
 	"scripts": {

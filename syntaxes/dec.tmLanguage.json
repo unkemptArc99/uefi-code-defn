@@ -1,0 +1,156 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "DEC",
+	"patterns": [
+		{
+			"include": "#comments"
+		},
+		{
+			"include": "#section_header"
+		},
+		{
+			"include": "#assignments"
+		},
+		{
+			"include": "#keywords"
+		},
+		{
+			"include": "#variables"
+		},
+		{
+			"include": "#constants"
+		}
+	],
+	"repository": {
+		"keywords": {
+			"patterns": [
+				{
+					"name": "keyword.control.dec",
+					"match": "!(if|endif|else|include|ifdef)\\b"
+				},
+				{
+					"name": "entity.name.type.dec",
+					"match": "(VOID|(UINT|INT)[0-9]+)\\b"
+				}
+			]
+		},
+		"assignments": {
+			"patterns": [
+				{
+					"name": "keyword.other",
+					"match": "DEFINE"
+				},
+				{
+					"name": "variable.name.pcd.dec",
+					"match": "(\\w+)(\\.\\w+)+\\s*(\\|)",
+					"captures": {
+						"1": {
+							"name": "variable.parameter"
+						},
+						"3": {
+							"name": "keyword.operator"
+						}
+					}
+				},
+				{
+					"name": "variable.name.define.dec",
+					"match": "[\\*\\w]+\\s*(=)",
+					"captures": {
+						"1": {
+							"name": "keyword.operator"
+						}
+					}
+				}
+			]
+		},
+		"variables": {
+			"patterns": [
+				{
+					"name": "variable.name",
+					"match": "\\$\\([\\w]+\\)"
+				}
+			]
+		},
+		"constants": {
+			"patterns": [
+				{
+					"name": "constant.language.boolean",
+					"match": "\\b(TRUE|FALSE)"
+				},
+				{
+					"name": "constant.numeric.dec",
+					"match": "0x[a-fA-F0-9]+"
+				},
+				{
+					"name": "constant.other.dec",
+					"match": "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
+				},
+				{
+					"include": "#strings"
+				}
+			]
+		},
+		"section_header": {
+			"name": "entity.name.function.dec",
+			"begin": "(\\[|<)",
+			"end": "(\\]|>)",
+			"patterns": [
+				{
+					"name": "entity.name.function.defines.dec",
+					"match": "Defines"
+				},
+				{
+					"name": "entity.name.function.includes.dec",
+					"match": "Includes"
+				},
+				{
+					"name": "entity.name.function.guids.dec",
+					"match": "Guids"
+				},
+				{
+					"name": "entity.name.function.ppis.dec",
+					"match": "Ppis"
+				},
+				{
+					"name": "entity.name.function.protocols.dec",
+					"match": "Protocols"
+				},
+				{
+					"name": "entity.name.function.libraries.dec",
+					"match": "Libraries(\\.\\w+)?(, Libraries\\.\\w+)*"
+				},
+				{
+					"name": "entity.name.function.libraryclasses.dec",
+					"match": "LibraryClasses(\\.\\w+)*(, LibraryClasses(\\.\\w+)+)*"
+				},
+				{
+					"name": "entity.name.function.pcds.dec",
+					"match": "Pcds(FixedAtBuild|FeatureFlag|DynamicEx)"
+				}
+			]
+		},
+		"comments": {
+			"name": "comment.line.dec",
+			"begin": "#",
+			"end": "\n",
+			"patterns": [
+				{
+					"name": "comment.line.dec",
+					"match": "."
+				}
+			]
+		},
+		"strings": {
+			"name": "string.quoted.double.dec",
+			"begin": "\"",
+			"end": "\"",
+			"patterns": [
+				{
+					"name": "string.quoted.double.constant",
+					"match": "."
+				}
+			]
+		}
+	},
+	"scopeName": "source.dec"
+}
