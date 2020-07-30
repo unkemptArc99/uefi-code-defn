@@ -1,48 +1,70 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-import * as path from 'path';
 
-interface DefLocation {
-	keyword: string,
-	filePath: string,
-	location: vscode.Location
+let fileStore: Map<string, vscode.Location> = new Map();
+let fileWatcher: vscode.FileSystemWatcher;
+
+async function parseFile (fileName: vscode.Uri) {
+  // Open the file for processing
+  vscode.workspace.openTextDocument(fileName).then((fileContent) => {
+    let textContent = fileContent.getText();
+    // Pattern which searches Pcd declaration
+    let pattern = /\b\w+\.(Pcd\w+)\|.+\b/g;
+    let matchArr;
+    while ((matchArr = pattern.exec(textContent)) !== null) {
+      // Start and End positions of the location of the definiton of Pcd.
+      let endPos: vscode.Position = fileContent.positionAt(pattern.lastIndex);
+      let startPos: vscode.Position = fileContent.positionAt(pattern.lastIndex - matchArr[0].length);
+      // Storing the Pcd in the map for better complexity on finding definitions.
+      fileStore.set(matchArr[1], new vscode.Location(fileName, new vscode.Range(startPos, endPos)));
+    }
+  });
 }
 
-function parseDecContent () {
-	let resultJson = {
-		dec : []
-	};
+async function parseDecContent () {
 	vscode.workspace.findFiles("**/*.dec").then(decFiles => {
-		decFiles.forEach ((decFile, i, decFiles) => {
-			let item = {};
-			item["file"] = decFile.pathl
+		decFiles.forEach ((decFile) => {
+      parseFile(decFile);
 		});
 	});
-	
 }
 
-function createFileStore () {
-	let fileSystem : vscode.FileSystem = vscode.workspace.fs;
-	let workspaceRoot : string = "";
-	if (vscode.workspace.workspaceFolders) {
-	 workspaceRoot = vscode.workspace.workspaceFolders[0].name;
-	}
-	let fileStoreJsonPath : string = path.join(workspaceRoot, ".vscode/fileStore.json");
-	let fileStoreJsonUri : vscode.Uri = vscode.Uri.file(fileStoreJsonPath);
-
-
-	fileSystem.writeFile(fileStoreJsonUri, )
-
+async function refreshFileStore(event: vscode.Uri) {
+	await parseFile (event);
 }
 
-function refreshFileStore(event : vscode.Uri) {
-	vscode.window.showInformationMessage(event.path);
+class DecDefinitionProvider implements vscode.DefinitionProvider {
+  public provideDefinition (
+    document: vscode.TextDocument,
+    position: vscode.Position,
+    token: vscode.CancellationToken
+  ): Thenable<vscode.Location> {
+    let wordRange = document.getWordRangeAtPosition(position);
+    if (wordRange) {
+      let searchStr = document.getText(wordRange);
+      console.log(searchStr);
+      let regexMatchArr = searchStr.match(/Pcd\w+/g);
+      if (regexMatchArr && regexMatchArr.length > 0) {
+        console.log(regexMatchArr[0]);
+        let strLoc = fileStore.get(regexMatchArr[0]);
+        console.log(strLoc);
+        if (strLoc) {
+          return new Promise(resolve => {
+            return strLoc;
+          });
+        }
+      }
+    }
+    return new Promise(reject => {
+      return Error("Definiton not found");
+    });
+  }
 }
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
 
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	// This line of code will only be executed once when your extension is activated
@@ -54,18 +76,26 @@ export function activate(context: vscode.ExtensionContext) {
 	let disposable = vscode.commands.registerCommand('uefi-code-defn.helloWorld', () => {
 		// The code you place here will be executed every time your command is executed
 		vscode.window.showInformationMessage('Hello World from uefi-code-defn!');
-		if (vscode.workspace.workspaceFolders) {
-			vscode.window.showInformationMessage (vscode.workspace.workspaceFolders[0].name);
-		}
-	});
+  });
 
-	let fileWatcher : vscode.FileSystemWatcher = vscode.workspace.createFileSystemWatcher ("**/*.dec");
+  let disposableQuery = vscode.commands.registerCommand('uefi-code-defn.queryFileStore', () => { 
+    console.log(fileStore.get("PcdUartDefaultBaudRate"));
+  });
+  
+  await parseDecContent();
+
+	fileWatcher = vscode.workspace.createFileSystemWatcher ("**/*.dec");
 	fileWatcher.onDidChange(event => refreshFileStore(event));
 	fileWatcher.onDidCreate(event => refreshFileStore(event));
-	fileWatcher.onDidDelete(event => refreshFileStore(event));
+  fileWatcher.onDidDelete(event => refreshFileStore(event));
+  
+  let disposableDefnProvider = vscode.languages.registerDefinitionProvider('c', new DecDefinitionProvider());
 
-	context.subscriptions.push(disposable);
+	context.subscriptions.push(disposable, disposableQuery, disposableDefnProvider);
 }
 
 // this method is called when your extension is deactivated
-export function deactivate() {}
+export function deactivate() {
+  fileStore.clear();
+  fileWatcher.dispose();
+}

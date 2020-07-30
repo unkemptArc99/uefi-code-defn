@@ -15,7 +15,9 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onCommand:uefi-code-defn.helloWorld"
+    "onCommand:uefi-code-defn.helloWorld",
+    "onLanguage:dec",
+    "workspaceContains:**/*.dec"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
@@ -25,8 +27,8 @@
 				"title": "Hello World"
 			},
 			{
-				"command": "uefi-code-defn.showEnv",
-				"title": "Show Environment"
+				"command": "uefi-code-defn.queryFileStore",
+				"title": "Query File Store"
 			}
 		],
 		"grammars": [
@@ -38,17 +40,17 @@
 		],
 		"languages": [
 			{
-                "id": "dec",
-                "aliases": [
-                    "UEFI Project Declaration File",
-                    "DEC",
-                    "dec"
-                ],
-                "extensions": [
-                    ".dec"
-                ],
-                "configuration": "./language-coonfigurations/dec-language-configuration.json"
-            }
+				"id": "dec",
+				"aliases": [
+					"UEFI Project Declaration File",
+					"DEC",
+					"dec"
+				],
+				"extensions": [
+					".dec"
+				],
+				"configuration": "./language-coonfigurations/dec-language-configuration.json"
+			}
 		]
 	},
 	"scripts": {
