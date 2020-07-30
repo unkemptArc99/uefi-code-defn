@@ -39,7 +39,7 @@ class DecDefinitionProvider implements vscode.DefinitionProvider {
     document: vscode.TextDocument,
     position: vscode.Position,
     token: vscode.CancellationToken
-  ): Thenable<vscode.Location> {
+  ): vscode.ProviderResult<vscode.Location> {
     let wordRange = document.getWordRangeAtPosition(position);
     if (wordRange) {
       let searchStr = document.getText(wordRange);
@@ -50,9 +50,7 @@ class DecDefinitionProvider implements vscode.DefinitionProvider {
         let strLoc = fileStore.get(regexMatchArr[0]);
         console.log(strLoc);
         if (strLoc) {
-          return new Promise(resolve => {
             return strLoc;
-          });
         }
       }
     }
