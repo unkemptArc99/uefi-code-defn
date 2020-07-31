@@ -30,8 +30,49 @@ async function parseDecContent () {
 	});
 }
 
-async function refreshFileStore(event: vscode.Uri) {
-	await parseFile (event);
+async function deleteFileStoreContents(event: vscode.Uri) {
+  fileStore.forEach((value, key, map) => {
+    if (value.uri === event) {
+      fileStore.delete(key);
+    }
+  });
+}
+
+async function parseChangedFileContent(event: vscode.Uri) {
+  // Open the file for processing
+  vscode.workspace.openTextDocument(event).then((fileContent) => {
+    let pcdList: Set<string> = new Set();
+    let textContent = fileContent.getText();
+    // Pattern which searches Pcd declaration
+    let pattern = /\b\w+\.(Pcd\w+)\|.+\b/g;
+    let matchArr;
+    while ((matchArr = pattern.exec(textContent)) !== null) {
+      // Start and End positions of the location of the definiton of Pcd.
+      let endPos: vscode.Position = fileContent.positionAt(pattern.lastIndex);
+      let startPos: vscode.Position = fileContent.positionAt(pattern.lastIndex - matchArr[0].length);
+      // Storing the Pcd in the map for better complexity on finding definitions.
+      pcdList.add(matchArr[1]);
+      fileStore.set(matchArr[1], new vscode.Location(event, new vscode.Range(startPos, endPos)));
+    }
+    fileStore.forEach((v, k, m) => {
+      if (v.uri === event && !pcdList.has(k)) {
+        fileStore.delete(k);
+      }
+    });
+    pcdList.clear();
+  });
+}
+
+async function refreshFileStore(event: vscode.Uri, flags: number) {
+  if (flags === 1) {
+    await parseChangedFileContent(event);
+  }
+  else if (flags === 2) {
+    await parseFile(event);
+  }
+  else if (flags === 3) {
+    await deleteFileStoreContents(event);
+  }
 }
 
 class DecDefinitionProvider implements vscode.DefinitionProvider {
@@ -64,15 +105,9 @@ class DecDefinitionProvider implements vscode.DefinitionProvider {
 // your extension is activated the very first time the command is executed
 export async function activate(context: vscode.ExtensionContext) {
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
 	console.log('Congratulations, your extension "uefi-code-defn" is now active!');
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
 	let disposable = vscode.commands.registerCommand('uefi-code-defn.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
 		vscode.window.showInformationMessage('Hello World from uefi-code-defn!');
   });
 
@@ -83,13 +118,22 @@ export async function activate(context: vscode.ExtensionContext) {
   await parseDecContent();
 
 	fileWatcher = vscode.workspace.createFileSystemWatcher ("**/*.dec");
-	fileWatcher.onDidChange(event => refreshFileStore(event));
-	fileWatcher.onDidCreate(event => refreshFileStore(event));
-  fileWatcher.onDidDelete(event => refreshFileStore(event));
+	fileWatcher.onDidChange(event => refreshFileStore(event, 1));
+	fileWatcher.onDidCreate(event => refreshFileStore(event, 2));
+  fileWatcher.onDidDelete(event => refreshFileStore(event, 3));
   
-  let disposableDefnProvider = vscode.languages.registerDefinitionProvider('c', new DecDefinitionProvider());
+  let disposableDefnProviderC = vscode.languages.registerDefinitionProvider('c', new DecDefinitionProvider());
+  let disposableDefnProviderDSC = vscode.languages.registerDefinitionProvider('dsc', new DecDefinitionProvider());
+  let disposableDefnProviderFDF = vscode.languages.registerDefinitionProvider('inf', new DecDefinitionProvider());
+  let disposableDefnProviderINF = vscode.languages.registerDefinitionProvider('fdf', new DecDefinitionProvider());
 
-	context.subscriptions.push(disposable, disposableQuery, disposableDefnProvider);
+  context.subscriptions.push(disposable, 
+                             disposableQuery, 
+                             disposableDefnProviderC,
+                             disposableDefnProviderDSC,
+                             disposableDefnProviderFDF,
+                             disposableDefnProviderINF
+                             );
 }
 
 // this method is called when your extension is deactivated

@@ -1,0 +1,161 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "INF",
+	"patterns": [
+		{
+			"include": "#comments"
+		},
+		{
+			"include": "#section_header"
+		},
+		{
+			"include": "#assignments"
+		},
+		{
+			"include": "#keywords"
+		},
+		{
+			"include": "#variables"
+		},
+		{
+			"include": "#constants"
+		}
+
+	],
+	"repository": {
+		"keywords": {
+			"patterns": [
+				{
+					"name": "keyword.control.inf",
+					"match": "!(if|endif|else|include|ifdef)\\b"
+				}
+			]
+		},
+		"assignments": {
+			"patterns": [
+				{
+					"name": "keyword.other",
+					"match": "(DEFINE)"
+				},
+				{
+					"name": "variable.name.pcd.inf",
+					"match": "(\\w+)(\\.\\w+)+\\s*(\\|)",
+					"captures": {
+						"1": {
+							"name": "variable.parameter"
+						},
+						"3": {
+							"name": "keyword.operator"
+						}
+					}
+				},
+				{
+					"name": "variable.name.define.inf",
+					"match": "[\\*\\w]+\\s*(=)",
+					"captures": {
+						"1": {
+							"name": "keyword.operator"
+						}
+					}
+				}
+			]
+		},
+		"variables": {
+			"patterns": [
+				{
+					"name": "variable.name",
+					"match": "\\$\\([\\w]+\\)"
+				}
+			]
+		},
+		"constants": {
+			"patterns": [
+				{
+					"name": "constant.language.boolean",
+					"match": "\\b(TRUE|FALSE)"
+				},
+				{
+					"name": "constant.numeric.inf",
+					"match": "0x[A-F0-9]+"
+				},
+				{
+					"include": "#strings"
+				}
+			]
+		},
+		"section_header": {
+			"name": "entity.name.function.inf",
+			"begin": "(\\[|<)",
+			"end": "(\\]|>)",
+			"patterns": [
+				{
+					"name": "entity.name.function.defines.inf",
+					"match": "Defines"
+				},
+				{
+					"name": "entity.name.function.sources.inf",
+					"match": "Sources(\\.\\w+)*"
+				},
+				{
+					"name": "entity.name.function.buildoptions.inf",
+					"match": "BuildOptions(\\.\\w+)*"
+				},
+				{
+					"name": "entity.name.function.libraryclasses.inf",
+					"match": "LibraryClasses(\\.\\w+)*"
+				},
+				{
+					"name": "entity.name.function.protocols.inf",
+					"match": "Protocols(\\.\\w+)*"
+				},
+				{
+					"name": "entity.name.function.guids.inf",
+					"match": "Guids(\\.\\w+)*"
+				},
+				{
+					"name": "entity.name.function.guids.inf",
+					"match": "Binaries(\\.\\w+)*"
+				},
+				{
+					"name": "entity.name.function.depex.inf",
+					"match": "Depex(\\.\\w+)?"
+				},
+				{
+					"name": "entity.name.function.packages.inf",
+					"match": "Packages(\\.\\w+)*"
+				},
+				{
+					"name": "entity.name.function.ppi.inf",
+					"match": "Ppis(\\.\\w+)?"
+				},
+				{
+					"name": "entity.name.function.rule.inf",
+					"match": "Rule(\\.\\w+)*"
+				}
+			]
+		},
+		"comments": {
+			"name": "comment.line.inf",
+			"begin": "#",
+			"end": "\n",
+			"patterns": [
+				{
+					"name": "comment.line.inf",
+					"match": "."
+				}
+			]
+		},
+		"strings": {
+			"name": "string.quoted.double.inf",
+			"begin": "\"",
+			"end": "\"",
+			"patterns": [
+				{
+					"name": "string.quoted.double.constant",
+					"match": "."
+				}
+			]
+		}
+	},
+	"scopeName": "source.inf"
+}

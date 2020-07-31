@@ -36,7 +36,22 @@
 				"language": "dec",
 				"scopeName": "source.dec",
 				"path": "./syntaxes/dec.tmLanguage.json"
-			}
+      },
+      {
+        "language": "dsc",
+        "scopeName": "source.dsc",
+        "path": "./syntaxes/dsc.tmLanguage.json"
+      },
+      {
+        "language": "inf",
+        "scopeName": "source.inf",
+        "path": "./syntaxes/inf.tmLanguage.json"
+      },
+      {
+        "language": "fdf",
+        "scopeName": "source.fdf",
+        "path": "./syntaxes/fdf.tmLanguage.json"
+      }
 		],
 		"languages": [
 			{
@@ -49,8 +64,44 @@
 				"extensions": [
 					".dec"
 				],
-				"configuration": "./language-coonfigurations/dec-language-configuration.json"
-			}
+				"configuration": "./language-configurations/dec-language-configuration.json"
+      },
+      {
+        "id": "dsc",
+        "aliases": [
+          "UEFI Project Descriptor File",
+          "DSC",
+          "dsc"
+        ],
+        "extensions": [
+          ".dsc"
+        ],
+        "configuration": "./language-configurations/dsc-language-configuration.json"
+      },
+      {
+        "id": "fdf",
+        "aliases": [
+          "UEFI Flash Descriptor File",
+          "FDF",
+          "fdf"
+        ],
+        "extensions": [
+          ".fdf"
+        ],
+        "configuration": "./language-configurations/fdf-language-configuration.json"
+      },
+      {
+        "id": "inf",
+        "aliases": [
+          "UEFI INF Package",
+          "INF",
+          "inf"
+        ],
+        "extensions": [
+          ".inf"
+        ],
+        "configuration": "./language-configurations/inf-language-configuration.json"
+      }
 		]
 	},
 	"scripts": {

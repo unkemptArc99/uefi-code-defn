@@ -1,0 +1,159 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "DSC",
+	"patterns": [
+		{
+			"include": "#comments"
+		},
+		{
+			"include": "#section_header"
+		},
+		{
+			"include": "#assignments"
+		},
+		{
+			"include": "#keywords"
+		},
+		{
+			"include": "#variables"
+		},
+		{
+			"include": "#constants"
+		},
+		{
+			"include":"#library_classes"
+		},
+		{
+			"include": "#files"
+		}
+
+	],
+	"repository": {
+		"keywords": {
+			"patterns": [
+				{
+					"name": "keyword.control.dsc",
+					"match": "!(if|endif|else|include|ifdef)\\b"
+				}
+			]
+		},
+		"assignments": {
+			"patterns": [
+				{
+					"name": "keyword.other",
+					"match": "DEFINE"
+				},
+				{
+					"name": "variable.name.pcd.dsc",
+					"match": "(\\w+)(\\.\\w+)+\\s*(\\|)",
+					"captures": {
+						"1": {
+							"name": "variable.parameter"
+						},
+						"3": {
+							"name": "keyword.operator"
+						}
+					}
+				},
+				{
+					"name": "variable.name.define.dsc",
+					"match": "[\\*\\w]+\\s*(=)",
+					"captures": {
+						"1": {
+							"name": "keyword.operator"
+						}
+					}
+				}
+			]
+		},
+		"variables": {
+			"patterns": [
+				{
+					"name": "variable.name",
+					"match": "\\$\\([\\w]+\\)"
+				}
+			]
+		},
+		"constants": {
+			"patterns": [
+				{
+					"name": "constant.language.boolean",
+					"match": "\\b(TRUE|FALSE)"
+				},
+				{
+					"name": "constant.numeric.dsc",
+					"match": "0x[A-F0-9]+"
+				},
+				{
+					"include": "#strings"
+				}
+			]
+		},
+		"library_classes": {
+			"patterns": [
+				{
+					"name": "constant.language.libraryclass.dsc",
+					"match": "([A-Z][A-Za-z_0-9]*)\\s*\\|"
+				}
+			]
+		},
+		"files": {
+			"patterns": [
+				{
+					"name":"constant.language.file.dsc",
+					"match":"(\\?[A-Za-z_\\-\\s0-9\\.]+)+\\.([A-Za-z0-9]+)"
+				}
+			]
+		},
+		"section_header": {
+			"name": "entity.name.function.dsc",
+			"begin": "(\\[|<)",
+			"end": "(\\]|>)",
+			"patterns": [
+				{
+					"name": "entity.name.function.defines.dsc",
+					"match": "Defines"
+				},
+				{
+					"name": "entity.name.function.skuids.dsc",
+					"match": "SkuIds"
+				},
+				{
+					"name": "entity.name.function.buildoptions.dsc",
+					"match": "BuildOptions"
+				},
+				{
+					"name": "entity.name.function.libraries.dsc",
+					"match": "Libraries(\\.\\w+)?(, Libraries\\.\\w+)*"
+				},
+				{
+					"name": "entity.name.function.libraryclasses.dsc",
+					"match": "LibraryClasses(\\.\\w+)*(, LibraryClasses(\\.\\w+)+)*"
+				}
+			]
+		},
+		"comments": {
+			"name": "comment.line.dsc",
+			"begin": "#",
+			"end": "\n",
+			"patterns": [
+				{
+					"name": "comment.line.dsc",
+					"match": "."
+				}
+			]
+		},
+		"strings": {
+			"name": "string.quoted.double.dsc",
+			"begin": "\"",
+			"end": "\"",
+			"patterns": [
+				{
+					"name": "string.quoted.double.constant",
+					"match": "."
+				}
+			]
+		}
+	},
+	"scopeName": "source.dsc"
+}

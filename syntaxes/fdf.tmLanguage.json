@@ -1,0 +1,149 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "FDF",
+	"patterns": [
+		{
+			"include": "#comments"
+		},
+		{
+			"include": "#section_header"
+		},
+		{
+			"include": "#assignments"
+		},
+		{
+			"include": "#keywords"
+		},
+		{
+			"include": "#variables"
+		},
+		{
+			"include": "#constants"
+		}
+
+	],
+	"repository": {
+		"keywords": {
+			"patterns": [
+				{
+					"name": "keyword.control.fdf",
+					"match": "!(if|endif|else|include|ifdef)\\b"
+				}
+			]
+		},
+		"assignments": {
+			"patterns": [
+				{
+					"name": "keyword.other",
+					"match": "(DEFINE|FILE|INF|SET|DXE_DEPEX|RAW|VERSION|Optional)"
+				},
+				{
+					"name": "variable.name.pcd.fdf",
+					"match": "(\\w+)(\\.\\w+)+\\s*(\\|)",
+					"captures": {
+						"1": {
+							"name": "variable.parameter"
+						},
+						"3": {
+							"name": "keyword.operator"
+						}
+					}
+				},
+				{
+					"name": "variable.name.define.fdf",
+					"match": "[\\*\\w]+\\s*(=)",
+					"captures": {
+						"1": {
+							"name": "keyword.operator"
+						}
+					}
+				}
+			]
+		},
+		"variables": {
+			"patterns": [
+				{
+					"name": "variable.name",
+					"match": "\\$\\([\\w]+\\)"
+				}
+			]
+		},
+		"constants": {
+			"patterns": [
+				{
+					"name": "constant.language.boolean",
+					"match": "\\b(TRUE|FALSE)"
+				},
+				{
+					"name": "constant.numeric.fdf",
+					"match": "0x[A-F0-9]+"
+				},
+				{
+					"include": "#strings"
+				}
+			]
+		},
+		"section_header": {
+			"name": "entity.name.function.fdf",
+			"begin": "(\\[|<)",
+			"end": "(\\]|>)",
+			"patterns": [
+				{
+					"name": "entity.name.function.defines.fdf",
+					"match": "Defines"
+				},
+				{
+					"name": "entity.name.function.capsule.fdf",
+					"match": "Capsule"
+				},
+				{
+					"name": "entity.name.function.fmppayload.fdf",
+					"match": "FmpPayload"
+				},
+				{
+					"name": "entity.name.function.vtf.fdf",
+					"match": "VTF"
+				},
+				{
+					"name": "entity.name.function.FD.fdf",
+					"match": "FD(\\.\\w+)?"
+				},
+				{
+					"name": "entity.name.function.pcioption.fdf",
+					"match": "OptionRom\\.(\\w+)"
+				},
+				{
+					"name": "entity.name.function.FV.fdf",
+					"match": "FV(\\.\\w+)?"
+				},
+				{
+					"name": "entity.name.function.rule.fdf",
+					"match": "Rule(\\.\\w+)*"
+				}
+			]
+		},
+		"comments": {
+			"name": "comment.line.fdf",
+			"begin": "#",
+			"end": "\n",
+			"patterns": [
+				{
+					"name": "comment.line.fdf",
+					"match": "."
+				}
+			]
+		},
+		"strings": {
+			"name": "string.quoted.double.fdf",
+			"begin": "\"",
+			"end": "\"",
+			"patterns": [
+				{
+					"name": "string.quoted.double.constant",
+					"match": "."
+				}
+			]
+		}
+	},
+	"scopeName": "source.fdf"
+}
