@@ -10,7 +10,7 @@ async function parseFile (fileName: vscode.Uri) {
   vscode.workspace.openTextDocument(fileName).then((fileContent) => {
     let textContent = fileContent.getText();
     // Pattern which searches Pcd declaration
-    let pattern = /\b\w+\.(Pcd\w+)\|.+\b/g;
+    let pattern = /\b\w+\.(Pcd\w+)[\ ]*\|.+\b/g;
     let matchArr;
     while ((matchArr = pattern.exec(textContent)) !== null) {
       // Start and End positions of the location of the definiton of Pcd.
@@ -44,7 +44,7 @@ async function parseChangedFileContent(event: vscode.Uri) {
     let pcdList: Set<string> = new Set();
     let textContent = fileContent.getText();
     // Pattern which searches Pcd declaration
-    let pattern = /\b\w+\.(Pcd\w+)\|.+\b/g;
+    let pattern = /\b\w+\.(Pcd\w+)[\ ]*\|.+\b/g;
     let matchArr;
     while ((matchArr = pattern.exec(textContent)) !== null) {
       // Start and End positions of the location of the definiton of Pcd.
