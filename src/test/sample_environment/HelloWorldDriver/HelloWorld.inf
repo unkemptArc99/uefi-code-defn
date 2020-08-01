@@ -1,0 +1,45 @@
+## @file HelloWorld.inf
+#
+#  Copyright (C) Microsoft Corporation. All rights reserved.
+#
+#  DXE Driver for creating/populating UEFI Calibration variables with data from Display Module Storage
+#
+# @par Specification Reference:
+#
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = HelloWorld
+  FILE_GUID                      = A4D219D3-4080-41A1-8E8A-045814DE84FB
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = HelloWorldEntry
+
+[Sources]
+  HelloWorld.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  MsSurfaceCorePkg/MsSurfaceCorePkg.dec
+  TglFamilyPkg/FamilyPkg.dec
+  ../Sampledec.dec
+
+[LibraryClasses]
+  DebugLib
+  BaseLib
+  PcdLib
+  UefiDriverEntryPoint
+  UefiRuntimeServicesTableLib
+  UefiBootServicesTableLib
+
+[Guids]
+  gMsHelloWorldGuid
+
+[FixedPcd]
+  sampledec.NumberOfUniverses
+
+[Depex]
+  gEfiVariableArchProtocolGuid AND
+  gEfiVariableWriteArchProtocolGuid
