@@ -137,11 +137,12 @@ export class EccMonitor {
 
 
         // point to the ecc repository
+        fileContent = '';
         fileContent += 'cd ' + edk2repository + '\n';
         fileContent += 'cd BaseTools\\Source\\Python\\Ecc\\' + '\n';
 
         // run the ecc
-        fileContent += 'ecc -t %1 -r %2' + '\n';
+        fileContent += 'EccMain.py -t %1 -r %2' + '\n';
 
         // Create the edk2setup bat file
         fs.writeFileSync(eccScriptFilePath, fileContent, (err:Error) => {
@@ -155,10 +156,12 @@ export class EccMonitor {
     // method to create batch files for generating excel sheets
     private async generateEccXls (fileName:vscode.Uri) {
         let tempFileName:string = await this.copyFileToOutputFolder(fileName);
-        let justFileName:string = tempFileName.split('\\').splice(-1).toString();
+        let fileNameObject:Array<string> = tempFileName.split('\\');
+        let exceptFileName = fileNameObject.splice(0,fileNameObject.length-1).join('\\').toString();
+        let justFileName:string = fileNameObject[fileNameObject.length-1].toString();
         let tempFileNameWithCsvExtension:string = justFileName.split('.').splice(0,1).toString() + '.csv';
         let outputFileName:string = path.join(this.eccGenOutputDir,tempFileNameWithCsvExtension);
-        let command:string = this.eccScript + ' ' + tempFileName + ' ' + outputFileName;
+        let command:string = this.eccScript + ' ' + exceptFileName + ' ' + outputFileName;
         console.log("Command input :", command);
 
         // Spawning the child process to create the excel file
