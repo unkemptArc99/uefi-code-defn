@@ -1,16 +1,11 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-import * as child from 'child_process';
-import { Console } from 'console';
-import { glob } from 'glob';
-import { stringify } from 'querystring';
-import { Stats, PathLike } from 'fs';
+import { EccMonitor } from './eccMonitor';
 
 let fileStore: Map<string, vscode.Location> = new Map();
 let fileWatcher: vscode.FileSystemWatcher;
 let EccMonitorObject : EccMonitor;
-let fileList: Array<string>;
 
 async function parseFile (fileName: vscode.Uri) {
   // Open the file for processing
@@ -107,78 +102,6 @@ class DecDefinitionProvider implements vscode.DefinitionProvider {
     });
   }
 }
-
-class EccMonitor {
-  private folderParse = 0;
-
-  private changedTextDocument (fileName : vscode.Uri) {
-    let filePath = fileName.fsPath;
-    console.log(filePath);
-
-    console.log("Spawning process");
-    const { spawn} = require('child_process');
-    const bat = spawn('cmd.exe',['/c','C:\\git\\Others\\hackathon\\uefi-code-defn\\src\\somefile.bat']);
-
-    bat.stdout.on('data', (data:any) => {
-      console.log(data.toString());
-    });
-    
-    bat.stderr.on('data', (data:any) => {
-      console.error(data.toString());
-    });
-    
-    bat.on('exit', (code:any) => {
-      console.log(`Child exited with code ${code}`);
-    });
-
-    console.log("Created events");
-
-
-    // console.log("Executing child process");
-    // const { execFileSync } = require('child_process');
-    // execFileSync('C:\\Windows\\System32\\cmd.exe', ['/c', 'somefile.cmd'], (error:any, stdout:any, stderr:any) => {
-    //   if (error) {
-    //     console.error(`exec error: ${error}`);
-    //     return;
-    //   }
-    //   console.log('stdoutput:');
-    //   console.log(`stdout: ${stdout}`);
-    //   console.error(`stderr: ${stderr}`);
-    // });
-
-
-    // let wshShell:ActiveXObject;
-    // try {
-    //   console.log('Executing somefile.bat');
-    //   child.execFileSync('somefile.cmd');
-    //   console.log('Executed somefile.bat');
-    // } catch(e) {
-    //   console.log("error occured");
-    //   console.log(e.toString());
-    // }
-    console.log("Post try catch.");
-  }
-
-  public EccMonitorEvent (event: vscode.Uri, flags: number) {
-    if (flags === 1) {
-      console.log("Ecc monitor Change noticed.");
-    } else if (flags === 2) {
-      console.log("Ecc monitor Creation noticed.");
-    } else if (flags === 3) {
-      console.log("Ecc monitor Deletion noticed.");
-    }
-  
-    this.changedTextDocument(event);
-  }
-
-  constructor (globPattern: vscode.GlobPattern) {
-    let eccMonitorFileWatcher = vscode.workspace.createFileSystemWatcher (globPattern);
-    eccMonitorFileWatcher.onDidChange(event => this.EccMonitorEvent(event, 1));
-    eccMonitorFileWatcher.onDidCreate(event => this.EccMonitorEvent(event, 2));
-    eccMonitorFileWatcher.onDidDelete(event => this.EccMonitorEvent(event, 3));
-  }
-}
-
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
