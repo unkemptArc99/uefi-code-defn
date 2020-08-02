@@ -114,15 +114,48 @@ class EccMonitor {
   private changedTextDocument (fileName : vscode.Uri) {
     let filePath = fileName.fsPath;
     console.log(filePath);
-    let wshShell:ActiveXObject;
-    try {
-      console.log('Executing somefile.bat');
-      child.exec('somefile.bat');
-      console.log('Executed somefile.bat');
-    } catch(e) {
-      console.log("error occured");
-      console.log(e.toString());
-    }
+
+    console.log("Spawning process");
+    const { spawn} = require('child_process');
+    const bat = spawn('cmd.exe',['/c','C:\\git\\Others\\hackathon\\uefi-code-defn\\src\\somefile.bat']);
+
+    bat.stdout.on('data', (data:any) => {
+      console.log(data.toString());
+    });
+    
+    bat.stderr.on('data', (data:any) => {
+      console.error(data.toString());
+    });
+    
+    bat.on('exit', (code:any) => {
+      console.log(`Child exited with code ${code}`);
+    });
+
+    console.log("Created events");
+
+
+    // console.log("Executing child process");
+    // const { execFileSync } = require('child_process');
+    // execFileSync('C:\\Windows\\System32\\cmd.exe', ['/c', 'somefile.cmd'], (error:any, stdout:any, stderr:any) => {
+    //   if (error) {
+    //     console.error(`exec error: ${error}`);
+    //     return;
+    //   }
+    //   console.log('stdoutput:');
+    //   console.log(`stdout: ${stdout}`);
+    //   console.error(`stderr: ${stderr}`);
+    // });
+
+
+    // let wshShell:ActiveXObject;
+    // try {
+    //   console.log('Executing somefile.bat');
+    //   child.execFileSync('somefile.cmd');
+    //   console.log('Executed somefile.bat');
+    // } catch(e) {
+    //   console.log("error occured");
+    //   console.log(e.toString());
+    // }
     console.log("Post try catch.");
   }
 
