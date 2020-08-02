@@ -1,9 +1,16 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
+import * as child from 'child_process';
+import { Console } from 'console';
+import { glob } from 'glob';
+import { stringify } from 'querystring';
+import { Stats, PathLike } from 'fs';
 
 let fileStore: Map<string, vscode.Location> = new Map();
 let fileWatcher: vscode.FileSystemWatcher;
+let EccMonitorObject : EccMonitor;
+let fileList: Array<string>;
 
 async function parseFile (fileName: vscode.Uri) {
   // Open the file for processing
@@ -101,6 +108,45 @@ class DecDefinitionProvider implements vscode.DefinitionProvider {
   }
 }
 
+class EccMonitor {
+  private folderParse = 0;
+
+  private changedTextDocument (fileName : vscode.Uri) {
+    let filePath = fileName.fsPath;
+    console.log(filePath);
+    let wshShell:ActiveXObject;
+    try {
+      console.log('Executing somefile.bat');
+      child.exec('somefile.bat');
+      console.log('Executed somefile.bat');
+    } catch(e) {
+      console.log("error occured");
+      console.log(e.toString());
+    }
+    console.log("Post try catch.");
+  }
+
+  public EccMonitorEvent (event: vscode.Uri, flags: number) {
+    if (flags === 1) {
+      console.log("Ecc monitor Change noticed.");
+    } else if (flags === 2) {
+      console.log("Ecc monitor Creation noticed.");
+    } else if (flags === 3) {
+      console.log("Ecc monitor Deletion noticed.");
+    }
+  
+    this.changedTextDocument(event);
+  }
+
+  constructor (globPattern: vscode.GlobPattern) {
+    let eccMonitorFileWatcher = vscode.workspace.createFileSystemWatcher (globPattern);
+    eccMonitorFileWatcher.onDidChange(event => this.EccMonitorEvent(event, 1));
+    eccMonitorFileWatcher.onDidCreate(event => this.EccMonitorEvent(event, 2));
+    eccMonitorFileWatcher.onDidDelete(event => this.EccMonitorEvent(event, 3));
+  }
+}
+
+
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 export async function activate(context: vscode.ExtensionContext) {
@@ -108,7 +154,7 @@ export async function activate(context: vscode.ExtensionContext) {
 	console.log('Congratulations, your extension "uefi-code-defn" is now active!');
 
 	let disposable = vscode.commands.registerCommand('uefi-code-defn.helloWorld', () => {
-		vscode.window.showInformationMessage('Hello World from uefi-code-defn!');
+		vscode.window.showInformationMessage('UEFI extension is active now.');
   });
 
   let disposableQuery = vscode.commands.registerCommand('uefi-code-defn.queryFileStore', () => { 
@@ -121,14 +167,22 @@ export async function activate(context: vscode.ExtensionContext) {
 	fileWatcher.onDidChange(event => refreshFileStore(event, 1));
 	fileWatcher.onDidCreate(event => refreshFileStore(event, 2));
   fileWatcher.onDidDelete(event => refreshFileStore(event, 3));
-  
+
+  // Creating the ECC Monitor here
+  // The eccmonitor file watcher can be created inside the class itself.
+  // But the reason for creating an instance here is to specify any kind of file
+  console.log("Creating ecc monitor file watcher");
+  let eccMonitorObject = new EccMonitor("**/*.*");
+  console.log("Created ecc monitor file watcher");
+
   let disposableDefnProviderC = vscode.languages.registerDefinitionProvider('c', new DecDefinitionProvider());
   let disposableDefnProviderDSC = vscode.languages.registerDefinitionProvider('dsc', new DecDefinitionProvider());
   let disposableDefnProviderFDF = vscode.languages.registerDefinitionProvider('inf', new DecDefinitionProvider());
   let disposableDefnProviderINF = vscode.languages.registerDefinitionProvider('fdf', new DecDefinitionProvider());
 
-  context.subscriptions.push(disposable, 
-                             disposableQuery, 
+
+  context.subscriptions.push(disposable,
+                             disposableQuery,
                              disposableDefnProviderC,
                              disposableDefnProviderDSC,
                              disposableDefnProviderFDF,
