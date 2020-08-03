@@ -1,5 +1,8 @@
 // All Imports
-import {Workbook, Row, Cell} from 'exceljs';
+import { Workbook, Row, Cell, Worksheet } from 'exceljs';
+import { IEccData } from './IeccData';
+
+let fs = require('fs');
 
 // All constants
 const { spawnSync } = require('child_process');
@@ -16,10 +19,38 @@ export class ExcelUtility {
      * Methods
     */
 
-    // Method to convert the excel sheet to a map
-    private static async convertExcelToMap (excelFileName:string) {
-        console.log("Converting excel file to map");
 
+    // Method to convert csv file to EccDataObject
+    private static async convertCsvToEccDataObject (excelFile:string, fileName:string) {
+
+        // EccDataArray that will be returned
+        let EccDataArray:Array<IEccData> = new Array<IEccData>();
+
+        // Reading the csv file
+        let content:string = fs.readFileSync(excelFile).toString();
+
+        // Splitting the csv file content to separate lines
+        let contentList = content.split('\n');
+
+        // Iterate through the list and find content
+        for (let index:number = 1; index < contentList.length-1; index++) {
+            let currentRow:string = contentList[index];
+            let currentRowArray:Array<string> = currentRow.split(',');
+            let eccDataObject:IEccData = {
+                serialNumber : Number(currentRowArray[0]),
+                errorCode : Number(currentRowArray[1]),
+                errorMessage : '' + currentRowArray[2].toString(),
+                fileName : fileName,
+                lineNumber : Number(currentRowArray[4]),
+                otherErrorMessage : '' + currentRowArray[5].toString()
+            }
+
+            if (eccDataObject.errorMessage != '' && eccDataObject.otherErrorMessage != '') {
+                console.log(eccDataObject);
+                EccDataArray.push(eccDataObject);
+            }
+        }
+        return EccDataArray;
     }
 
     // Method to create batch files for generating excel sheets
@@ -34,24 +65,27 @@ export class ExcelUtility {
     }
 
     // This method should return a map
-    public static async createMap (eccScriptFilePath:string, folderPath:string, outputFileName:string) {
+    public static async createEccDataObject (eccScriptFilePath:string, fileName:string, folderPath:string, outputFileName:string) {
         // This method will generate the Excel sheet
         await ExcelUtility.generateEccXls (eccScriptFilePath, folderPath, outputFileName);
 
-        console.log("Excel sheet generated. File available for convertion");
+        console.log('Excel sheet generated. File available for convertion');
 
         // The output path is available. if some error occurred in previous step, this code will not be executed
-        // -----------------------------------------------------------------------------------------------------
-        await ExcelUtility.convertExcelToMap(outputFileName);
+        return ExcelUtility.convertCsvToEccDataObject(outputFileName, fileName);
     }
 
-    public static async cetm (fn:string) {
-        ExcelUtility.convertExcelToMap(fn);
+    // prototyping method. Should be removed before committing
+    public static async cetm (ofn:string, fn:string) {
+        console.log('output file name : ' + ofn);
+        console.log('file name : ' + fn);
+        // ExcelUtility.convertExcelToEccDataObject(ofn, fn);
+        return ExcelUtility.convertCsvToEccDataObject(ofn,fn);
     }
 
     // All Class methods are static. Object creation is prohibited.
     constructor () {
-        throw("This is a sealed class. All methods are static.");
+        throw('This is a sealed class. All methods are static.');
     }
 }
 

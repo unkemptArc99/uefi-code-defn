@@ -2,6 +2,7 @@
 import * as vscode from 'vscode';
 import { PathLike } from 'fs';
 import { ExcelUtility } from './excelUtility';
+import { IEccData } from './IeccData';
 
 // All constants
 let fs = require('fs');
@@ -174,7 +175,6 @@ export class EccMonitor {
     // Method to clear the copied files from the Ecc\Copied folder where the 
     // recently saved files are copied temporarily
     private async clearEccCopiedFilesFolder(fileToBeDeleted:string) {
-        console.log("Deleting the copied file" + fileToBeDeleted);
         let command:string = "del " + fileToBeDeleted;
         spawnSync('cmd.exe', ['/c', command]);
     }
@@ -206,7 +206,7 @@ export class EccMonitor {
         // generate the call to create the excel sheet
         // In the future instead of calling this method
         // The method to the ported ecc tool will be called here.
-        await ExcelUtility.createMap(this.eccScriptFilePath, fileDirectory, outputFilePath);
+        await ExcelUtility.createEccDataObject(this.eccScriptFilePath, fileName.fsPath, fileDirectory, outputFilePath);
 
         // call to clear the copied file from the folder as the processing is done
         await this.clearEccCopiedFilesFolder(tempFileName);
@@ -268,8 +268,10 @@ export class EccMonitor {
 
     // Constructor method that is called whenever an object is created
     constructor (globPattern: vscode.GlobPattern) {
-        // ExcelUtility.cetm("C:\\Users\\nisanjee\\Desktop\\Output\\HelloWorld.c.csv");
-        // return;
+        ExcelUtility.cetm("C:\\Users\\nisanjee\\Desktop\\Output\\HelloWorld.c.csv",
+        "C:\\git\\Others\\hackathon\\uefi-code-defn\\src\\test\\sample_environment\\HelloWorldDriver\\HelloWorld.c"
+        );
+        return;
         this.performSetup();
 
         let eccMonitorFileWatcher = vscode.workspace.createFileSystemWatcher (globPattern);
