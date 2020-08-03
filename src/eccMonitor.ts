@@ -15,22 +15,52 @@ const {spawn} = require('child_process');
 const {spawnSync} = require('child_process');
 
 
+class ExcelUtility {
+    // Method to create batch files for generating excel sheets
+    // this method just takes the two input args 
+    // 1. folder path containing the copied files
+    // 2. file names of the output
+    // This method exists only for the sake of prototyping
+    // Once the ecc tool is ported to js this should go away
+    private static async generateEccXls (eccScriptFilePath:string, folderPath:string, outputFileName:string) {
+        let command:string = eccScriptFilePath + ' ' + folderPath + ' ' + outputFileName;
+        console.log(command);
+        spawnSync ('cmd.exe',['/c',command]);
+    }
+
+    // This method should return a map
+    public static async createMap (eccScriptFilePath:string, folderPath:string, outputFileName:string) {
+        // This method will generate the Excel sheet
+        await ExcelUtility.generateEccXls (eccScriptFilePath, folderPath, outputFileName);
+
+        // The output path is available. if some error occurred in previous step, this code will not be executed
+        // -----------------------------------------------------------------------------------------------------
+    }
+
+    // All Class methods are static. Object creation is prohibited.
+    constructor () {
+        throw("This is a sealed class. All methods are static.");
+    }
+}
+
+
 export class EccMonitor {
+
+    // Variables containing the path to the temp directory
+    // that can be used for some processing.
     private tempDir:string = os.tmpdir();
     private outputDirectoryName:string = "uefi-code-defn-op";
-    private outputPath:string = path.join(this.tempDir, this.outputDirectoryName);
-    private outputScriptDirectory:string = path.join(this.outputPath, 'Scripts');
+
+    // The output paths are set to public for any future child classes to use
+    public outputPath:string = path.join(this.tempDir, this.outputDirectoryName);
+    public outputScriptDirectory:string = path.join(this.outputPath, 'Scripts');
+
+    // All ecc bat scripts should be removed in the future after porting the tool to js ecc
     private eccScriptFilePath:string = path.join(this.outputScriptDirectory, 'eccScript.bat');
     private eccGenRoot:string = path.join(this.outputPath, 'EccGen');
     private eccGenCopiedFiles:string = path.join(this.eccGenRoot, 'Copied');
     private eccGenOutputDir:string = path.join(this.eccGenRoot, 'Output');
 
-
-    // A function to print the message that the execution of a script has been complete.
-    // Should be removed probably
-    private scriptExecutionComplete() {
-        console.log("Script has been executed completely");
-    }
 
     // Method to create the output deletion script
     private createOutputDeletionScript () {
@@ -40,6 +70,7 @@ export class EccMonitor {
         fileContent += "rmdir /s /q ";
         fileContent += this.outputPath;
 
+        // Writing the deletion script to the deletionScript.bat file
         fs.writeFileSync(deletionScript, fileContent, (err:Error) => {
             if (err) {
                 console.error("Error in file creation");
@@ -48,17 +79,20 @@ export class EccMonitor {
         return deletionScript;
     }
 
+
     // Method to delete the output deletion script that was created
     private deleteOutputDeletionScript (deletionScript:PathLike) {
         let deleteCommand:string = "del " + deletionScript;
         spawnSync("cmd.exe",['/c',deleteCommand]);
     }
 
+
     // Method to run the outpu deletion script that will delete the old cached output folder
     private runOutputDeletionScript (scriptPath:PathLike) {
         console.log("Running the following script file : " + scriptPath);
         spawnSync("cmd.exe", ['/c', scriptPath]);
     }
+
 
     // Method to clean up the output path
     // this will create a script file that will delete the output directory
@@ -114,6 +148,7 @@ export class EccMonitor {
         return newPath;
     }
 
+
     // Method to create the EccGenerationScript that is stored in the script directory
     private async createEccGenerationScript() {
         let fileContent : string = '';
@@ -146,17 +181,6 @@ export class EccMonitor {
         });
     }
 
-    // Method to create batch files for generating excel sheets
-    // this method just takes the two input args 
-    // 1. folder path containing the copied files
-    // 2. file names of the output
-    // This method exists only for the sake of prototyping
-    // Once the ecc tool is ported to js this should go away
-    private async generateEccXls (folderPath:string, outputFileName:string) {
-        let command:string = this.eccScriptFilePath + ' ' + folderPath + ' ' + outputFileName;
-        console.log(command);
-        spawnSync ('cmd.exe',['/c',command]);
-    }
 
     // Method to the run the ecc test and trigger the excel
     private async runEccTest (fileName:vscode.Uri) {
@@ -175,12 +199,16 @@ export class EccMonitor {
         // the path of the output file which is nothing but the new
         let outputFilePath:string = path.join(this.eccGenOutputDir,outputFileName);
 
-        // generate the call to create the excel sheet
-        await this.generateEccXls(fileDirectory, outputFilePath);
-        console.log("Created the excel sheet creation event");
-
         // add part of code to copy the details to a map
+        // This is the object that will be mapped
         // --------------------------------------------------------------------------------
+        // let squiggleMap : Map<string,string> = new Map(); squiggleMap = 
+        // --------------------------------------------------------------------------------
+
+        // generate the call to create the excel sheet
+        // In the future instead of calling this method
+        // The method to the ported ecc tool will be called here.
+        await ExcelUtility.createMap(this.eccScriptFilePath, fileDirectory, outputFilePath);
     }
 
     // this method is called whenever a change in a text document is noticed
@@ -205,11 +233,13 @@ export class EccMonitor {
       this.changedTextDocument(event);
     }
 
+
     // Method that performs clean up to remove any kind of mess that was left uncleaned in previous instance
     private async performCleanup() {
         // Empty at the moment
         // --------------------------------------------------------------------------------
     }
+
 
     // Method to perform setup
     private async performSetup () {
@@ -219,6 +249,7 @@ export class EccMonitor {
         // creating the output directory for this instance
         await this.createOutputDirectory();
     }
+
 
     // Method that is run whenever a new file is created
     private newFileOpenedEvent (textDocument:vscode.TextDocument) {
