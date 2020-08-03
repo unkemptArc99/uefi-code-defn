@@ -5,7 +5,7 @@ import { EccMonitor } from './eccMonitor';
 
 let fileStore: Map<string, vscode.Location> = new Map();
 let fileWatcher: vscode.FileSystemWatcher;
-let EccMonitorObject : EccMonitor;
+let eccMonitorObject : EccMonitor;
 
 async function parseFile (fileName: vscode.Uri) {
   // Open the file for processing
@@ -127,8 +127,7 @@ export async function activate(context: vscode.ExtensionContext) {
   // Creating the ECC Monitor here
   // The eccmonitor file watcher can be created inside the class itself.
   // But the reason for creating an instance here is to specify any kind of file
-  console.log("Creating ecc monitor file watcher");
-  let eccMonitorObject = new EccMonitor("**/*.*");
+  eccMonitorObject = new EccMonitor("**/*.*");
   console.log("Created ecc monitor file watcher");
 
   let disposableDefnProviderC = vscode.languages.registerDefinitionProvider('c', new DecDefinitionProvider());
@@ -150,4 +149,7 @@ export async function activate(context: vscode.ExtensionContext) {
 export function deactivate() {
   fileStore.clear();
   fileWatcher.dispose();
+
+  // the clean up for the ecc monitor tool
+  eccMonitorObject.cleanUp();
 }

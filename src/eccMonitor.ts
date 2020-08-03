@@ -9,7 +9,7 @@ let fs = require('fs');
 let path = require('path');
 let os = require('os');
 
-let edk2repository = 'C:\\git\\Others\\edk2\\';
+let edk2repository = 'C:\\git\\Others\\hackathon\\uefi-code-defn\\src\\edk2\\';
 
 const {spawn} = require('child_process');
 const {spawnSync} = require('child_process');
@@ -20,10 +20,11 @@ export class EccMonitor {
     private outputDirectoryName:string = "uefi-code-defn-op";
     private outputPath:string = path.join(this.tempDir, this.outputDirectoryName);
     private outputScriptDirectory:string = path.join(this.outputPath, 'Scripts');
-    private eccScript:string = path.join(this.outputScriptDirectory, 'ecc.bat');
+    private eccScriptFilePath:string = path.join(this.outputScriptDirectory, 'eccScript.bat');
     private eccGenRoot:string = path.join(this.outputPath, 'EccGen');
     private eccGenCopiedFiles:string = path.join(this.eccGenRoot, 'Copied');
     private eccGenOutputDir:string = path.join(this.eccGenRoot, 'Output');
+
 
     // A function to print the message that the execution of a script has been complete.
     // Should be removed probably
@@ -31,41 +32,35 @@ export class EccMonitor {
         console.log("Script has been executed completely");
     }
 
-    // method to create the output deletion script
+    // Method to create the output deletion script
     private createOutputDeletionScript () {
-        console.log("Creating output deleting script");
         let deletionScript:PathLike = path.join(this.tempDir,"deletionScript.bat");
-        console.log("Deletion script path : " + deletionScript);
 
         let fileContent:string ="";
         fileContent += "rmdir /s /q ";
         fileContent += this.outputPath;
-        console.log("file content : " + fileContent);
 
         fs.writeFileSync(deletionScript, fileContent, (err:Error) => {
             if (err) {
-                console.log("Error in file creation");
+                console.error("Error in file creation");
             }
-            console.log("File created");
         });
         return deletionScript;
     }
 
-    // method to delete the output deletion script that was created
+    // Method to delete the output deletion script that was created
     private deleteOutputDeletionScript (deletionScript:PathLike) {
-        console.log("Deleting the script");
         let deleteCommand:string = "del " + deletionScript;
-        console.log("Delete command : " + deleteCommand);
         spawnSync("cmd.exe",['/c',deleteCommand]);
     }
 
-    // method to run the outpu deletion script that will delete the old cached output folder
+    // Method to run the outpu deletion script that will delete the old cached output folder
     private runOutputDeletionScript (scriptPath:PathLike) {
         console.log("Running the following script file : " + scriptPath);
         spawnSync("cmd.exe", ['/c', scriptPath]);
     }
 
-    // method to clean up the output path
+    // Method to clean up the output path
     // this will create a script file that will delete the output directory
     // this long route is taken because rmdir is not working.
     private async cleanUpOutputPath () {
@@ -75,7 +70,8 @@ export class EccMonitor {
         this.deleteOutputDeletionScript(deletionScript);
     }
 
-    // method to create an output directory and delete the old instances
+
+    // Method to create an output directory and delete the old instances
     private async createOutputDirectory () {
       if(fs.existsSync(this.outputPath)) {
         this.cleanUpOutputPath();
@@ -100,13 +96,20 @@ export class EccMonitor {
       }
     }
 
+
+    // Method to copy the file that was just saved to the temporary output folder
     private async copyFileToOutputFolder(fileName:vscode.Uri) {
         let filePath:string = fileName.fsPath.toString();
+
+        // this is the copy command
+        // copy x y => copies x to y
         let commandToExecute:string = 'copy ' + filePath + ' ' + this.eccGenCopiedFiles;
+
+        // executing the copy command in sync to avoid any kind of multithreading issues
         spawnSync('cmd.exe',['/c',commandToExecute, '/Y']);
 
+        // this is the new path which will contain the copied file that was just saved
         let newPath:string = path.join(this.eccGenCopiedFiles, filePath.split('\\').splice(-1).toString());
-        console.log(newPath);
 
         return newPath;
     }
@@ -114,38 +117,28 @@ export class EccMonitor {
     // Method to create the EccGenerationScript that is stored in the script directory
     private async createEccGenerationScript() {
         let fileContent : string = '';
-        let edkSetupScriptFilePath = path.join(this.outputScriptDirectory,'edkSetup.bat');
-        let eccScriptFilePath = path.join(this.outputScriptDirectory, 'ecc.bat');
 
         // point to the edk2 repository
         fileContent += 'cd ' + edk2repository + '\n';
 
+        // print the params
+        fileContent += "@echo arg1 %1" + '\n' + "@echo arg2 %2" + '\n';
+
         // run the edk2 setup bat
-        fileContent += 'edksetup.bat\n';
+        fileContent += 'call edksetup.bat\n';
 
         if(!fs.existsSync(this.outputScriptDirectory)) {
             throw("Synchronization issues. Output directory does not exist.");
         }
 
-        // Create the edk2setup bat file
-        fs.writeFileSync(edkSetupScriptFilePath, fileContent, (err:Error) => {
-            if (err) {
-                console.log("Error in file creation");
-            }
-            console.log("Created Ecc generation script");
-        });
-
-
-        // point to the ecc repository
-        fileContent = '';
-        fileContent += 'cd ' + edk2repository + '\n';
-        fileContent += 'cd BaseTools\\Source\\Python\\Ecc\\' + '\n';
+        fileContent += '@echo Done with setup' + '\n';
+        // fileContent += 'cd BaseTools\\Source\\Python\\Ecc\\' + '\n';
 
         // run the ecc
-        fileContent += 'EccMain.py -t %1 -r %2' + '\n';
+        fileContent += 'Ecc -t %1 -r %2' + '\n';
 
         // Create the edk2setup bat file
-        fs.writeFileSync(eccScriptFilePath, fileContent, (err:Error) => {
+        fs.writeFileSync(this.eccScriptFilePath, fileContent, (err:Error) => {
             if (err) {
                 console.log("Error in file creation");
             }
@@ -153,34 +146,53 @@ export class EccMonitor {
         });
     }
 
-    // method to create batch files for generating excel sheets
-    private async generateEccXls (fileName:vscode.Uri) {
-        let tempFileName:string = await this.copyFileToOutputFolder(fileName);
-        let fileNameObject:Array<string> = tempFileName.split('\\');
-        let exceptFileName = fileNameObject.splice(0,fileNameObject.length-1).join('\\').toString();
-        let justFileName:string = fileNameObject[fileNameObject.length-1].toString();
-        let tempFileNameWithCsvExtension:string = justFileName.split('.').splice(0,1).toString() + '.csv';
-        let outputFileName:string = path.join(this.eccGenOutputDir,tempFileNameWithCsvExtension);
-        let command:string = this.eccScript + ' ' + exceptFileName + ' ' + outputFileName;
-        console.log("Command input :", command);
-
-        // Spawning the child process to create the excel file
-        spawnSync('cmd.exe', ['\c', command]);
-        console.log("Ran the command to create the excel sheet");
+    // Method to create batch files for generating excel sheets
+    // this method just takes the two input args 
+    // 1. folder path containing the copied files
+    // 2. file names of the output
+    // This method exists only for the sake of prototyping
+    // Once the ecc tool is ported to js this should go away
+    private async generateEccXls (folderPath:string, outputFileName:string) {
+        let command:string = this.eccScriptFilePath + ' ' + folderPath + ' ' + outputFileName;
+        console.log(command);
+        spawnSync ('cmd.exe',['/c',command]);
     }
 
-    // method to the run the ecc test and trigger the excel
+    // Method to the run the ecc test and trigger the excel
     private async runEccTest (fileName:vscode.Uri) {
-        await this.generateEccXls(fileName);
-        console.log("Created the excel sheet");
+        // terms related to folder names and trimming
+
+        // the file that was saved recently
+        let tempFileName:string = await this.copyFileToOutputFolder(fileName);
+        // the file name split into array
+        let fileNameObject:Array<string> = tempFileName.split('\\');
+        // the directory of the save file
+        let fileDirectory = fileNameObject.splice(0,fileNameObject.length-1).join('\\').toString();
+        // just the file name with the extension
+        let justFileName:string = fileNameObject[fileNameObject.length-1].toString();
+        // the name of the output file which is the file name and a .csv extension appended to it
+        let outputFileName:string = justFileName + '.csv';
+        // the path of the output file which is nothing but the new
+        let outputFilePath:string = path.join(this.eccGenOutputDir,outputFileName);
+
+        // generate the call to create the excel sheet
+        await this.generateEccXls(fileDirectory, outputFilePath);
+        console.log("Created the excel sheet creation event");
+
+        // add part of code to copy the details to a map
+        // --------------------------------------------------------------------------------
     }
 
     // this method is called whenever a change in a text document is noticed
+    // at the moment only the ecc test is run
     private async changedTextDocument (fileName : vscode.Uri) {
         await this.runEccTest(fileName);
         return;
     }
-  
+
+
+    // Method that actually calls the changed Text document event.
+    // This one needs some improvement --------------------------------------------------------------------------------
     private EccMonitorEvent (event: vscode.Uri, flags: number) {
       if (flags === 1) {
         console.log("Ecc monitor Change noticed.");
@@ -193,11 +205,13 @@ export class EccMonitor {
       this.changedTextDocument(event);
     }
 
+    // Method that performs clean up to remove any kind of mess that was left uncleaned in previous instance
     private async performCleanup() {
-        console.log("This method performs all clean up");
-        
+        // Empty at the moment
+        // --------------------------------------------------------------------------------
     }
 
+    // Method to perform setup
     private async performSetup () {
         // the first thing to do is clean up the old mess that was made
         await this.performCleanup();
@@ -206,15 +220,18 @@ export class EccMonitor {
         await this.createOutputDirectory();
     }
 
+    // Method that is run whenever a new file is created
     private newFileOpenedEvent (textDocument:vscode.TextDocument) {
         if (textDocument.fileName.endsWith('.git')) {
             return;
         }
         console.log('New file opened');
         console.log(textDocument.fileName);
-        // this.runEccTest(textDocument.uri);
+        this.runEccTest(textDocument.uri);
     }
 
+
+    // Method that is run whenever a file is closed
     private fileCloseEvent (textDocument:vscode.TextDocument) {
         if (textDocument.fileName.endsWith('.git')) {
             return;
@@ -223,10 +240,11 @@ export class EccMonitor {
         console.log(textDocument.fileName);
     }
 
+
+    // Constructor method that is called whenever an object is created
     constructor (globPattern: vscode.GlobPattern) {
         this.performSetup();
 
-        console.log("constructor is synchronous");
         let eccMonitorFileWatcher = vscode.workspace.createFileSystemWatcher (globPattern);
 
         // Event that is triggered whenever a document is opened
@@ -238,5 +256,14 @@ export class EccMonitor {
         eccMonitorFileWatcher.onDidChange(event => this.EccMonitorEvent(event, 1));
         eccMonitorFileWatcher.onDidCreate(event => this.EccMonitorEvent(event, 2));
         eccMonitorFileWatcher.onDidDelete(event => this.EccMonitorEvent(event, 3));
+    }
+
+
+    // The destructor method in the name cleanUp
+    // All clean up that needs to be performed when the vscode file is closed should go here
+    // There should be a better way to call it based on a close event instead of calling 
+    // this manually in the deactivate method
+    public async cleanUp () {
+        this.cleanUpOutputPath();
     }
 }
