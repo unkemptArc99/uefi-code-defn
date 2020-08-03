@@ -1,50 +1,28 @@
+// All imports
 import * as vscode from 'vscode';
-import * as child from 'child_process';
-import { Console } from 'console';
-import { glob } from 'glob';
-import { stringify } from 'querystring';
-import { Stats, PathLike } from 'fs';
+import { PathLike } from 'fs';
+import { ExcelUtility } from './excelUtility';
 
+// All constants
 let fs = require('fs');
 let path = require('path');
 let os = require('os');
-
-let edk2repository = 'C:\\git\\Others\\hackathon\\uefi-code-defn\\src\\edk2\\';
-
-const {spawn} = require('child_process');
-const {spawnSync} = require('child_process');
+const { spawnSync } = require('child_process');
 
 
-class ExcelUtility {
-    // Method to create batch files for generating excel sheets
-    // this method just takes the two input args 
-    // 1. folder path containing the copied files
-    // 2. file names of the output
-    // This method exists only for the sake of prototyping
-    // Once the ecc tool is ported to js this should go away
-    private static async generateEccXls (eccScriptFilePath:string, folderPath:string, outputFileName:string) {
-        let command:string = eccScriptFilePath + ' ' + folderPath + ' ' + outputFileName;
-        console.log(command);
-        spawnSync ('cmd.exe',['/c',command]);
-    }
-
-    // This method should return a map
-    public static async createMap (eccScriptFilePath:string, folderPath:string, outputFileName:string) {
-        // This method will generate the Excel sheet
-        await ExcelUtility.generateEccXls (eccScriptFilePath, folderPath, outputFileName);
-
-        // The output path is available. if some error occurred in previous step, this code will not be executed
-        // -----------------------------------------------------------------------------------------------------
-    }
-
-    // All Class methods are static. Object creation is prohibited.
-    constructor () {
-        throw("This is a sealed class. All methods are static.");
-    }
-}
-
-
+// The EccMonitor class
+// contains all methods related to setting up a monitor for detecting any kind of change in the vscode instance
 export class EccMonitor {
+    /* 
+     * Attributes
+     */
+
+    // The edk2 repository path should not exist in the future
+    // Should be removed after porting to the js ecc
+    private edk2repository:string = 'C:\\git\\Others\\hackathon\\uefi-code-defn\\src\\edk2\\';
+    get edk2Repository() {
+        return this.edk2repository;
+    } 
 
     // Variables containing the path to the temp directory
     // that can be used for some processing.
@@ -62,7 +40,18 @@ export class EccMonitor {
     private eccGenOutputDir:string = path.join(this.eccGenRoot, 'Output');
 
 
-    // Method to create the output deletion script
+    /* 
+     * Methods
+     */
+
+    // Method that performs clean up to remove any kind of mess that was left uncleaned in previous instance
+    private async performCleanup() {
+        // Empty at the moment
+        // --------------------------------------------------------------------------------
+    }
+
+
+     // Method to create the output deletion script
     private createOutputDeletionScript () {
         let deletionScript:PathLike = path.join(this.tempDir,"deletionScript.bat");
 
@@ -80,17 +69,17 @@ export class EccMonitor {
     }
 
 
-    // Method to delete the output deletion script that was created
-    private deleteOutputDeletionScript (deletionScript:PathLike) {
-        let deleteCommand:string = "del " + deletionScript;
-        spawnSync("cmd.exe",['/c',deleteCommand]);
-    }
-
-
     // Method to run the outpu deletion script that will delete the old cached output folder
     private runOutputDeletionScript (scriptPath:PathLike) {
         console.log("Running the following script file : " + scriptPath);
         spawnSync("cmd.exe", ['/c', scriptPath]);
+    }
+
+
+    // Method to delete the output deletion script that was created
+    private deleteOutputDeletionScript (deletionScript:PathLike) {
+        let deleteCommand:string = "del " + deletionScript;
+        spawnSync("cmd.exe",['/c',deleteCommand]);
     }
 
 
@@ -102,6 +91,39 @@ export class EccMonitor {
         console.log(deletionScript);
         this.runOutputDeletionScript(deletionScript);
         this.deleteOutputDeletionScript(deletionScript);
+    }
+
+
+    // Method to create the EccGenerationScript that is stored in the script directory
+    private async createEccGenerationScript() {
+        let fileContent : string = '';
+
+        // point to the edk2 repository
+        fileContent += 'cd ' + this.edk2repository + '\n';
+
+        // print the params
+        fileContent += "@echo arg1 %1" + '\n' + "@echo arg2 %2" + '\n';
+
+        // run the edk2 setup bat
+        fileContent += 'call edksetup.bat\n';
+
+        if(!fs.existsSync(this.outputScriptDirectory)) {
+            throw("Synchronization issues. Output directory does not exist.");
+        }
+
+        fileContent += '@echo Done with setup' + '\n';
+        // fileContent += 'cd BaseTools\\Source\\Python\\Ecc\\' + '\n';
+
+        // run the ecc
+        fileContent += 'Ecc -t %1 -r %2' + '\n';
+
+        // Create the edk2setup bat file
+        fs.writeFileSync(this.eccScriptFilePath, fileContent, (err:Error) => {
+            if (err) {
+                console.log("Error in file creation");
+            }
+            console.log("Created Ecc generation script");
+        });
     }
 
 
@@ -149,36 +171,12 @@ export class EccMonitor {
     }
 
 
-    // Method to create the EccGenerationScript that is stored in the script directory
-    private async createEccGenerationScript() {
-        let fileContent : string = '';
-
-        // point to the edk2 repository
-        fileContent += 'cd ' + edk2repository + '\n';
-
-        // print the params
-        fileContent += "@echo arg1 %1" + '\n' + "@echo arg2 %2" + '\n';
-
-        // run the edk2 setup bat
-        fileContent += 'call edksetup.bat\n';
-
-        if(!fs.existsSync(this.outputScriptDirectory)) {
-            throw("Synchronization issues. Output directory does not exist.");
-        }
-
-        fileContent += '@echo Done with setup' + '\n';
-        // fileContent += 'cd BaseTools\\Source\\Python\\Ecc\\' + '\n';
-
-        // run the ecc
-        fileContent += 'Ecc -t %1 -r %2' + '\n';
-
-        // Create the edk2setup bat file
-        fs.writeFileSync(this.eccScriptFilePath, fileContent, (err:Error) => {
-            if (err) {
-                console.log("Error in file creation");
-            }
-            console.log("Created Ecc generation script");
-        });
+    // Method to clear the copied files from the Ecc\Copied folder where the 
+    // recently saved files are copied temporarily
+    private async clearEccCopiedFilesFolder(fileToBeDeleted:string) {
+        console.log("Deleting the copied file" + fileToBeDeleted);
+        let command:string = "del " + fileToBeDeleted;
+        spawnSync('cmd.exe', ['/c', command]);
     }
 
 
@@ -209,6 +207,9 @@ export class EccMonitor {
         // In the future instead of calling this method
         // The method to the ported ecc tool will be called here.
         await ExcelUtility.createMap(this.eccScriptFilePath, fileDirectory, outputFilePath);
+
+        // call to clear the copied file from the folder as the processing is done
+        await this.clearEccCopiedFilesFolder(tempFileName);
     }
 
     // this method is called whenever a change in a text document is noticed
@@ -231,13 +232,6 @@ export class EccMonitor {
       }
     
       this.changedTextDocument(event);
-    }
-
-
-    // Method that performs clean up to remove any kind of mess that was left uncleaned in previous instance
-    private async performCleanup() {
-        // Empty at the moment
-        // --------------------------------------------------------------------------------
     }
 
 
@@ -274,6 +268,8 @@ export class EccMonitor {
 
     // Constructor method that is called whenever an object is created
     constructor (globPattern: vscode.GlobPattern) {
+        // ExcelUtility.cetm("C:\\Users\\nisanjee\\Desktop\\Output\\HelloWorld.c.csv");
+        // return;
         this.performSetup();
 
         let eccMonitorFileWatcher = vscode.workspace.createFileSystemWatcher (globPattern);
