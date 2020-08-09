@@ -268,10 +268,6 @@ export class EccMonitor {
 
     // Constructor method that is called whenever an object is created
     constructor (globPattern: vscode.GlobPattern) {
-        ExcelUtility.cetm("C:\\Users\\nisanjee\\Desktop\\Output\\HelloWorld.c.csv",
-        "C:\\git\\Others\\hackathon\\uefi-code-defn\\src\\test\\sample_environment\\HelloWorldDriver\\HelloWorld.c"
-        );
-        return;
         this.performSetup();
 
         let eccMonitorFileWatcher = vscode.workspace.createFileSystemWatcher (globPattern);

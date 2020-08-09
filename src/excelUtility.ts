@@ -75,14 +75,6 @@ export class ExcelUtility {
         return ExcelUtility.convertCsvToEccDataObject(outputFileName, fileName);
     }
 
-    // prototyping method. Should be removed before committing
-    public static async cetm (ofn:string, fn:string) {
-        console.log('output file name : ' + ofn);
-        console.log('file name : ' + fn);
-        // ExcelUtility.convertExcelToEccDataObject(ofn, fn);
-        return ExcelUtility.convertCsvToEccDataObject(ofn,fn);
-    }
-
     // All Class methods are static. Object creation is prohibited.
     constructor () {
         throw('This is a sealed class. All methods are static.');
