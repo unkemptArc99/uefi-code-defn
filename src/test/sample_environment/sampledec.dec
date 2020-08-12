@@ -1,0 +1,24 @@
+## @file
+# Component description file for Cayucos platform
+#
+# @copyright
+# Copyright (C) Microsoft Corporation. All rights reserved.
+#
+# @par Specification Reference:
+#
+##
+
+[Defines]
+  DEC_SPECIFICATION = 0x00010017
+  PACKAGE_NAME      = SampleDec
+  PACKAGE_VERSION   = 0.1
+  PACKAGE_GUID      = D7DAE51D-9764-4924-B6BF-7CC9C9F90F70
+
+[Includes]
+  Include
+
+[Guids]
+  gMsHelloWorldGuid = { 0x1b1554ee, 0xd024, 0x4cf5, { 0x8a, 0xbe, 0xb4, 0x55, 0x5f, 0x94, 0x81, 0x9b } }
+
+[PcdsFixedAtBuild]
+  sampledec.NumberOfUniverses | 0x00000012|UINT32|0x10000000

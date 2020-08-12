@@ -1,0 +1,17 @@
+[Defines]
+# This section defines macros that define the layout of the ROM which are used in other sections. These macros are also
+# parsed by the build infrastructure and added to the database of build variables available to builds scripts and
+# plugins.
+
+# General flash parameters
+DEFINE FLASH_BASE       = 0xFF000000
+DEFINE FLASH_SIZE       = 0x01000000
+DEFINE FLASH_BLOCK_SIZE = 0x00010000
+DEFINE FLASH_NUM_BLOCKS = 0x00000100
+
+#-----------------------------------------------------------------------------------------------------------------------
+[FV.BOOTBLOCK]    # Boot Block Firmware Volume
+                  # Note: This FV contains the reset vector and modules that require execute-in-place.
+#-----------------------------------------------------------------------------------------------------------------------
+
+INF HelloWorldDriver/HelloWorld.inf

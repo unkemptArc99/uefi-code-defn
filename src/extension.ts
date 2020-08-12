@@ -1,9 +1,11 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
+import { EccMonitor } from './eccMonitor';
 
 let fileStore: Map<string, vscode.Location> = new Map();
 let fileWatcher: vscode.FileSystemWatcher;
+let eccMonitorObject : EccMonitor;
 
 async function parseFile (fileName: vscode.Uri) {
   // Open the file for processing
@@ -108,7 +110,7 @@ export async function activate(context: vscode.ExtensionContext) {
 	console.log('Congratulations, your extension "uefi-code-defn" is now active!');
 
 	let disposable = vscode.commands.registerCommand('uefi-code-defn.helloWorld', () => {
-		vscode.window.showInformationMessage('Hello World from uefi-code-defn!');
+		vscode.window.showInformationMessage('UEFI extension is active now.');
   });
 
   let disposableQuery = vscode.commands.registerCommand('uefi-code-defn.queryFileStore', () => { 
@@ -121,14 +123,21 @@ export async function activate(context: vscode.ExtensionContext) {
 	fileWatcher.onDidChange(event => refreshFileStore(event, 1));
 	fileWatcher.onDidCreate(event => refreshFileStore(event, 2));
   fileWatcher.onDidDelete(event => refreshFileStore(event, 3));
-  
+
+  // Creating the ECC Monitor here
+  // The eccmonitor file watcher can be created inside the class itself.
+  // But the reason for creating an instance here is to specify any kind of file
+  eccMonitorObject = new EccMonitor("**/*.*");
+  console.log("Created ecc monitor file watcher");
+
   let disposableDefnProviderC = vscode.languages.registerDefinitionProvider('c', new DecDefinitionProvider());
   let disposableDefnProviderDSC = vscode.languages.registerDefinitionProvider('dsc', new DecDefinitionProvider());
   let disposableDefnProviderFDF = vscode.languages.registerDefinitionProvider('inf', new DecDefinitionProvider());
   let disposableDefnProviderINF = vscode.languages.registerDefinitionProvider('fdf', new DecDefinitionProvider());
 
-  context.subscriptions.push(disposable, 
-                             disposableQuery, 
+
+  context.subscriptions.push(disposable,
+                             disposableQuery,
                              disposableDefnProviderC,
                              disposableDefnProviderDSC,
                              disposableDefnProviderFDF,
@@ -140,4 +149,7 @@ export async function activate(context: vscode.ExtensionContext) {
 export function deactivate() {
   fileStore.clear();
   fileWatcher.dispose();
+
+  // the clean up for the ecc monitor tool
+  eccMonitorObject.cleanUp();
 }
