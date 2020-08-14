@@ -2,142 +2,135 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 
-let fileStore: Map<string, vscode.Location> = new Map();
-let fileWatcher: vscode.FileSystemWatcher;
+const PcdPattern: RegExp = /\b\w+\.(Pcd\w+)[\ ]*\|.+\b/g;
 
-async function parseFile (fileName: vscode.Uri) {
-  // Open the file for processing
-  vscode.workspace.openTextDocument(fileName).then((fileContent) => {
-    let textContent = fileContent.getText();
-    // Pattern which searches Pcd declaration
-    let pattern = /\b\w+\.(Pcd\w+)[\ ]*\|.+\b/g;
-    let matchArr;
-    while ((matchArr = pattern.exec(textContent)) !== null) {
-      // Start and End positions of the location of the definiton of Pcd.
-      let endPos: vscode.Position = fileContent.positionAt(pattern.lastIndex);
-      let startPos: vscode.Position = fileContent.positionAt(pattern.lastIndex - matchArr[0].length);
-      // Storing the Pcd in the map for better complexity on finding definitions.
-      fileStore.set(matchArr[1], new vscode.Location(fileName, new vscode.Range(startPos, endPos)));
-    }
-  });
-}
+const pcdStore: Map<string, vscode.Location> = new Map();
 
-async function parseDecContent () {
-	vscode.workspace.findFiles("**/*.dec").then(decFiles => {
-		decFiles.forEach ((decFile) => {
-      parseFile(decFile);
-		});
-	});
-}
-
-async function deleteFileStoreContents(event: vscode.Uri) {
-  fileStore.forEach((value, key, map) => {
-    if (value.uri === event) {
-      fileStore.delete(key);
-    }
-  });
-}
-
-async function parseChangedFileContent(event: vscode.Uri) {
-  // Open the file for processing
-  vscode.workspace.openTextDocument(event).then((fileContent) => {
-    let pcdList: Set<string> = new Set();
-    let textContent = fileContent.getText();
-    // Pattern which searches Pcd declaration
-    let pattern = /\b\w+\.(Pcd\w+)[\ ]*\|.+\b/g;
-    let matchArr;
-    while ((matchArr = pattern.exec(textContent)) !== null) {
-      // Start and End positions of the location of the definiton of Pcd.
-      let endPos: vscode.Position = fileContent.positionAt(pattern.lastIndex);
-      let startPos: vscode.Position = fileContent.positionAt(pattern.lastIndex - matchArr[0].length);
-      // Storing the Pcd in the map for better complexity on finding definitions.
-      pcdList.add(matchArr[1]);
-      fileStore.set(matchArr[1], new vscode.Location(event, new vscode.Range(startPos, endPos)));
-    }
-    fileStore.forEach((v, k, m) => {
-      if (v.uri === event && !pcdList.has(k)) {
-        fileStore.delete(k);
-      }
-    });
-    pcdList.clear();
-  });
-}
-
-async function refreshFileStore(event: vscode.Uri, flags: number) {
-  if (flags === 1) {
-    await parseChangedFileContent(event);
-  }
-  else if (flags === 2) {
-    await parseFile(event);
-  }
-  else if (flags === 3) {
-    await deleteFileStoreContents(event);
-  }
-}
-
-class DecDefinitionProvider implements vscode.DefinitionProvider {
-  public provideDefinition (
-    document: vscode.TextDocument,
-    position: vscode.Position,
-    token: vscode.CancellationToken
-  ): vscode.ProviderResult<vscode.Location> {
-    let wordRange = document.getWordRangeAtPosition(position);
-    if (wordRange) {
-      let searchStr = document.getText(wordRange);
-      console.log(searchStr);
-      let regexMatchArr = searchStr.match(/Pcd\w+/g);
-      if (regexMatchArr && regexMatchArr.length > 0) {
-        console.log(regexMatchArr[0]);
-        let strLoc = fileStore.get(regexMatchArr[0]);
-        console.log(strLoc);
-        if (strLoc) {
-            return strLoc;
+class PcdDefinitionProvider implements vscode.DefinitionProvider {
+    public provideDefinition (
+        document: vscode.TextDocument,
+        position: vscode.Position,
+        token: vscode.CancellationToken
+    ): vscode.ProviderResult<vscode.Location> {
+        const wordRange: vscode.Range|undefined = document.getWordRangeAtPosition(position);
+        if (wordRange) {
+            const searchStr: string = document.getText(wordRange);
+            const regexMatchArr: RegExpMatchArray|null = searchStr.match(/Pcd\w+/g);
+            if (regexMatchArr && regexMatchArr.length > 0) {
+                console.log(regexMatchArr[0]);
+                const strLoc: vscode.Location|undefined = pcdStore.get(regexMatchArr[0]);
+                console.log(strLoc);
+                if (strLoc) {
+                    return strLoc;
+                }
+            }
         }
-      }
+        return new Promise((reject) => {
+            new Error("Definiton not found");
+        });
     }
-    return new Promise(reject => {
-      return Error("Definiton not found");
-    });
-  }
 }
 
-// this method is called when your extension is activated
-// your extension is activated the very first time the command is executed
+export class UefiContext {
+    private decFileWatcher: vscode.FileSystemWatcher;
+
+    constructor() {
+        this.parseDecContent();
+        this.decFileWatcher = vscode.workspace.createFileSystemWatcher ("**/*.dec");
+	    this.decFileWatcher.onDidChange(event => this.refreshPcdStore(event, 1));
+	    this.decFileWatcher.onDidCreate(event => this.refreshPcdStore(event, 2));
+        this.decFileWatcher.onDidDelete(event => this.refreshPcdStore(event, 3));
+    }
+
+    private async parseFileForExp(fileName: vscode.Uri, pattern: RegExp): Promise<Map<string, vscode.Location>> {
+        // Open the file for processing
+        const result: Map<string, vscode.Location> = new Map();
+        return vscode.workspace.openTextDocument(fileName).then((fileContent) => {
+            const textContent: string = fileContent.getText();
+            // Pattern which searches Pcd declaration
+            let matchArr: RegExpExecArray|null;
+            while ((matchArr = pattern.exec(textContent)) !== null) {
+                // Start and End positions of the location of the definiton of Pcd.
+                const endPos: vscode.Position = fileContent.positionAt(pattern.lastIndex);
+                const startPos: vscode.Position = fileContent.positionAt(pattern.lastIndex - matchArr[0].length);
+                // Storing the Pcd in the map for better complexity on finding definitions.
+                result.set(matchArr[1], new vscode.Location(fileName, new vscode.Range(startPos, endPos)));
+            }
+            return result;
+        });
+    }
+
+    private async parseDecContent (): Promise<void> {
+        vscode.workspace.findFiles("**/*.dec").then(decFiles => {
+            decFiles.forEach ((decFile) => {
+                this.parseFileForExp(decFile, PcdPattern).then((pcdResults) => {
+                    pcdResults.forEach((value, key, map) => {
+                        pcdStore.set(key, value);
+                    });
+                });
+            });
+        });
+    }
+
+    private async refreshPcdStore(fileName: vscode.Uri, eventType: number): Promise<void> {
+        console.log(fileName.path + " " + eventType);
+        if (eventType === 1) {
+            this.parseFileForExp(fileName, PcdPattern).then((pcdResults) => {
+                pcdStore.forEach((value, key, map) => {
+                    if (value.uri.path === fileName.path) {
+                        const loc: vscode.Location|undefined = pcdResults.get(key);
+                        if (loc === undefined) {
+                            pcdStore.delete(key);
+                        }
+                    }
+                });
+                pcdResults.forEach((value, key, map) => {
+                    pcdStore.set(key, value);
+                });
+            });
+        } else if (eventType === 2) {
+            this.parseFileForExp(fileName, PcdPattern).then((pcdResults) => {
+                pcdResults.forEach((value, key, map) => {
+                    pcdStore.set(key, value);
+                });
+            });
+        } else if (eventType === 3) {
+            pcdStore.forEach((value, key, map) => {
+                if (value.uri === fileName) {
+                    pcdStore.delete(key);
+                }
+            });
+        }
+    }
+
+    public registerDefinitions(): vscode.Disposable[] {
+        const disposables: vscode.Disposable[] = [];
+
+        disposables.push(vscode.languages.registerDefinitionProvider('c', new PcdDefinitionProvider()));
+        disposables.push(vscode.languages.registerDefinitionProvider('dsc', new PcdDefinitionProvider()));
+        disposables.push(vscode.languages.registerDefinitionProvider('inf', new PcdDefinitionProvider()));
+
+        return disposables;
+    }
+}
+
 export async function activate(context: vscode.ExtensionContext) {
 
 	console.log('Congratulations, your extension "uefi-code-defn" is now active!');
 
 	let disposable = vscode.commands.registerCommand('uefi-code-defn.helloWorld', () => {
 		vscode.window.showInformationMessage('Hello World from uefi-code-defn!');
-  });
-
-  let disposableQuery = vscode.commands.registerCommand('uefi-code-defn.queryFileStore', () => { 
-    console.log(fileStore.get("PcdUartDefaultBaudRate"));
-  });
+    });
   
-  await parseDecContent();
-
-	fileWatcher = vscode.workspace.createFileSystemWatcher ("**/*.dec");
-	fileWatcher.onDidChange(event => refreshFileStore(event, 1));
-	fileWatcher.onDidCreate(event => refreshFileStore(event, 2));
-  fileWatcher.onDidDelete(event => refreshFileStore(event, 3));
-  
-  let disposableDefnProviderC = vscode.languages.registerDefinitionProvider('c', new DecDefinitionProvider());
-  let disposableDefnProviderDSC = vscode.languages.registerDefinitionProvider('dsc', new DecDefinitionProvider());
-  let disposableDefnProviderFDF = vscode.languages.registerDefinitionProvider('inf', new DecDefinitionProvider());
-  let disposableDefnProviderINF = vscode.languages.registerDefinitionProvider('fdf', new DecDefinitionProvider());
-
-  context.subscriptions.push(disposable, 
-                             disposableQuery, 
-                             disposableDefnProviderC,
-                             disposableDefnProviderDSC,
-                             disposableDefnProviderFDF,
-                             disposableDefnProviderINF
-                             );
+    let uefi = new UefiContext();
+    const uefiDisposables: vscode.Disposable[] = uefi.registerDefinitions();
+    uefiDisposables.forEach((value, index, array) => {
+        context.subscriptions.push(value);
+    });
+    context.subscriptions.push(disposable);
 }
 
 // this method is called when your extension is deactivated
 export function deactivate() {
-  fileStore.clear();
-  fileWatcher.dispose();
+    pcdStore.clear();
 }

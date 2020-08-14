@@ -25,10 +25,6 @@
 			{
 				"command": "uefi-code-defn.helloWorld",
 				"title": "Hello World"
-			},
-			{
-				"command": "uefi-code-defn.queryFileStore",
-				"title": "Query File Store"
 			}
 		],
 		"grammars": [
